@@ -21,7 +21,8 @@ export async function activateCard(req: Request, res: Response) {
 
 export async function getExtract(req: Request, res: Response) {
     const { id } = req.params;
-
+    const data = await cardService.getExtractAndBalance(parseInt(id));
+    res.send(data);
 }
 
 export async function blockCard(req: Request, res: Response) {

@@ -6,6 +6,8 @@ import * as employeeRepository from "../repositories/employeeRepository.js";
 import * as companyRepository from "../repositories/companyRepository.js";
 import Cryptr from "cryptr";
 import * as handlerError from "../middlewares/handlerErrorMiddleware.js";
+import * as rechargeRepository from "../repositories/rechargeRepository.js";
+import * as paymentsRepository from "../repositories/paymentsRepository.js";
 
 
 export async function verifyCard(type: TransactionTypes, id: number, apiKey: string) {
@@ -15,12 +17,10 @@ export async function verifyCard(type: TransactionTypes, id: number, apiKey: str
     const cryptr: Cryptr = new Cryptr("securityCodeCard");
 
     if (!apiKeyIsValid) {
-        console.log("verifica1")
         throw handlerError.unprocessableEntity();
     }
 
     if (!employee) {
-        console.log("verifica")
         throw handlerError.unprocessableEntity();
     }
 
@@ -99,16 +99,13 @@ export async function activeCard(cvv: string, password: string, id: number) {
 
     console.log(card)
     if (!card) {
-        console.log("aqui1")
         throw handlerError.unprocessableEntity();
     }
-
+    console.log(card.password);
     const cryptr: Cryptr = new Cryptr("securityCodeCard");
     const decryptedCvv: string = cryptr.decrypt(card.securityCode);
-    console.log(cvv, decryptedCvv);
 
     if (decryptedCvv !== cvv) {
-        console.log("aqui2")
         throw handlerError.unprocessableEntity();
     }
 
@@ -128,6 +125,29 @@ export async function activeCard(cvv: string, password: string, id: number) {
 }
 
 export async function getExtractAndBalance(id: number) {
+    const card = await cardRepository.findById(id);
+    if (!card) {
+        throw handlerError.unprocessableEntity();
+    }
+    const recharges = await rechargeRepository.findByCardId(id);
+    const transactions = await paymentsRepository.findByCardId(id);
+    let balance = 0;
+
+    for (let i: number = 0; i < recharges.length; i++) {
+        balance += recharges[i].amount;
+    }
+
+    for (let i: number = 0; i < transactions.length; i++) {
+        balance -= transactions[i].amount;
+    }
+
+    const data = {
+        balance,
+        transactions: transactions,
+        recharges: recharges
+    }
+
+    return data;
 
 }
 
@@ -135,19 +155,16 @@ export async function block(id: number, password: string) {
     const card = await cardRepository.findById(id);
 
     if (!card) {
-        console.log("ta aqui")
         throw handlerError.unprocessableEntity();
     }
 
     const expiredCard = await checkIfCardExpired(id);
 
     if (expiredCard) {
-        console.log("ta aqui2")
         throw handlerError.unprocessableEntity();
     }
 
     if (card.isBlocked) {
-        console.log("ta aqui3")
         throw handlerError.unprocessableEntity();
     }
 
@@ -156,7 +173,6 @@ export async function block(id: number, password: string) {
         await cardRepository.update(id, cardData);
         return;
     } else {
-        console.log("ta aqui4")
         throw handlerError.unprocessableEntity();
     }
 }
@@ -165,19 +181,16 @@ export async function unlock(id: number, password: string) {
     const card = await cardRepository.findById(id);
 
     if (!card) {
-        console.log("ta aqui")
         throw handlerError.unprocessableEntity();
     }
 
     const expiredCard = await checkIfCardExpired(id);
 
     if (expiredCard) {
-        console.log("ta aqui2")
         throw handlerError.unprocessableEntity();
     }
 
     if (!card.isBlocked) {
-        console.log("ta aqui3")
         throw handlerError.unprocessableEntity();
     }
 
@@ -186,12 +199,11 @@ export async function unlock(id: number, password: string) {
         await cardRepository.update(id, cardData);
         return;
     } else {
-        console.log("ta aqui4")
         throw handlerError.unprocessableEntity();
     }
 }
 
-async function checkIfCardExpired(id: number) {
+export async function checkIfCardExpired(id: number) {
     const card = await cardRepository.findById(id);
     const formatDate: string[] = card.expirationDate.split("/");
     const dateNow = new Date();

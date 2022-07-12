@@ -4,7 +4,7 @@ import cors from "cors";
 import router from "./routers/index.js";
 import dotenv from "dotenv";
 import handleErrorsMiddleware from "./middlewares/handlerErrorMiddleware.js";
-import cardRouter from "./routers/cardRouter.js"
+// import cardRouter from "./routers/cardRouter.js"
 
 dotenv.config();
 
@@ -12,7 +12,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(cardRouter);
+app.use(router);
 app.use(handleErrorsMiddleware);
 
 const port = process.env.PORT || 5000;
