@@ -8,17 +8,19 @@ import Cryptr from "cryptr";
 import * as handlerError from "../middlewares/handlerErrorMiddleware.js";
 
 
-export async function verifyCard(type: TransactionTypes, id: number, apiKey: string, name: string) {
+export async function verifyCard(type: TransactionTypes, id: number, apiKey: string) {
     const apiKeyIsValid = await companyRepository.findByApiKey(apiKey);
-    const employeeExist = await employeeRepository.findById(id);
+    const employee = await employeeRepository.findById(id);
     const employeeHasCardOfThisType = await cardRepository.findByTypeAndEmployeeId(type, id);
     const cryptr: Cryptr = new Cryptr("securityCodeCard");
 
     if (!apiKeyIsValid) {
+        console.log("verifica1")
         throw handlerError.unprocessableEntity();
     }
 
-    if (!employeeExist) {
+    if (!employee) {
+        console.log("verifica")
         throw handlerError.unprocessableEntity();
     }
 
@@ -26,10 +28,12 @@ export async function verifyCard(type: TransactionTypes, id: number, apiKey: str
         throw { type: "Conflict" };
     }
 
-    let arrayOfNames = name.split(" ");
+    let arrayOfNames = employee.fullName.split(" ");
+    console.log(arrayOfNames)
 
     if (arrayOfNames.length > 2) {
-        const treatedNames: string[] = arrayOfNames.filter((surname) => { surname.length > 2 });
+        const treatedNames: string[] = arrayOfNames.filter((surname) => { return surname.length > 2 });
+        console.log(treatedNames)
         const arraySize = treatedNames.length;
         let cardHolderName: string = treatedNames[0];
 
@@ -60,8 +64,9 @@ export async function verifyCard(type: TransactionTypes, id: number, apiKey: str
         };
 
         await cardRepository.insert(cardData);
+        return { number: numberCard, securityCode: securityCodeCard, expirationDate: cardExpiration };
     } else {
-        let cardHolderName: string = name;
+        let cardHolderName: string = employee.fullName;
         const cardHolderNameUpper = cardHolderName.toUpperCase();
         const numberCard = faker.finance.creditCardNumber('####-####-####-###L');
         const securityCodeCard = faker.finance.creditCardCVV();
@@ -85,30 +90,34 @@ export async function verifyCard(type: TransactionTypes, id: number, apiKey: str
         };
 
         await cardRepository.insert(cardData);
+        return { number: numberCard, securityCode: securityCodeCard, expirationDate: cardExpiration };
     }
 }
 
 export async function activeCard(cvv: string, password: string, id: number) {
     const card = await cardRepository.findById(id);
-    const cryptr: Cryptr = new Cryptr("securityCodeCard");
-    const decryptedCvv: string = cryptr.decrypt(card.securityCode);
 
-    if (decryptedCvv !== cvv) {
+    console.log(card)
+    if (!card) {
+        console.log("aqui1")
         throw handlerError.unprocessableEntity();
     }
 
-    if (!card) {
+    const cryptr: Cryptr = new Cryptr("securityCodeCard");
+    const decryptedCvv: string = cryptr.decrypt(card.securityCode);
+    console.log(cvv, decryptedCvv);
+
+    if (decryptedCvv !== cvv) {
+        console.log("aqui2")
         throw handlerError.unprocessableEntity();
     }
 
     if (card.password !== null) {
         throw handlerError.conflict();
     }
+    const expiredCard = await checkIfCardExpired(id);
 
-    const date = new Date(card.expirationDate);
-    const dateNow = new Date();
-
-    if (date.getFullYear >= dateNow.getFullYear && date.getMonth >= dateNow.getMonth) {
+    if (expiredCard) {
         throw handlerError.unprocessableEntity();
     }
 
@@ -120,4 +129,75 @@ export async function activeCard(cvv: string, password: string, id: number) {
 
 export async function getExtractAndBalance(id: number) {
 
+}
+
+export async function block(id: number, password: string) {
+    const card = await cardRepository.findById(id);
+
+    if (!card) {
+        console.log("ta aqui")
+        throw handlerError.unprocessableEntity();
+    }
+
+    const expiredCard = await checkIfCardExpired(id);
+
+    if (expiredCard) {
+        console.log("ta aqui2")
+        throw handlerError.unprocessableEntity();
+    }
+
+    if (card.isBlocked) {
+        console.log("ta aqui3")
+        throw handlerError.unprocessableEntity();
+    }
+
+    if (bcrypt.compareSync(password, card.password)) {
+        const cardData = { isBlocked: true };
+        await cardRepository.update(id, cardData);
+        return;
+    } else {
+        console.log("ta aqui4")
+        throw handlerError.unprocessableEntity();
+    }
+}
+
+export async function unlock(id: number, password: string) {
+    const card = await cardRepository.findById(id);
+
+    if (!card) {
+        console.log("ta aqui")
+        throw handlerError.unprocessableEntity();
+    }
+
+    const expiredCard = await checkIfCardExpired(id);
+
+    if (expiredCard) {
+        console.log("ta aqui2")
+        throw handlerError.unprocessableEntity();
+    }
+
+    if (!card.isBlocked) {
+        console.log("ta aqui3")
+        throw handlerError.unprocessableEntity();
+    }
+
+    if (bcrypt.compareSync(password, card.password)) {
+        const cardData = { isBlocked: false };
+        await cardRepository.update(id, cardData);
+        return;
+    } else {
+        console.log("ta aqui4")
+        throw handlerError.unprocessableEntity();
+    }
+}
+
+async function checkIfCardExpired(id: number) {
+    const card = await cardRepository.findById(id);
+    const formatDate: string[] = card.expirationDate.split("/");
+    const dateNow = new Date();
+    const date = new Date(parseInt(formatDate[1]), parseInt(formatDate[0]) - 1);
+    if (dateNow.getFullYear() >= date.getFullYear() && dateNow.getMonth() >= date.getMonth()) {
+        return true;
+    }
+    return false;
 }

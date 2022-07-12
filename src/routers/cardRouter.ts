@@ -1,9 +1,11 @@
 import { Router } from "express";
-import { activateCard, createCard } from "../controllers/cardController.js";
+import { activateCard, blockCard, createCard, unlockCard } from "../controllers/cardController.js";
 
 const cardRouter = Router();
 
-cardRouter.post("/card", createCard);
-cardRouter.post("card/activate", activateCard);
+cardRouter.post("/card/activate", activateCard);
+cardRouter.put("/block", blockCard);
+cardRouter.put("/unlock", unlockCard);
+cardRouter.post("/card/:apiKey", createCard);
 
 export default cardRouter;

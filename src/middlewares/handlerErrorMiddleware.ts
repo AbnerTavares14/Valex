@@ -17,9 +17,10 @@ export function unprocessableEntity() {
     return { type: "unprocessableEntity" };
 }
 
-export default function handleErrorsMiddleware(err: any, req: Request, res: Response, next: NextFunction) {
-    if (err.type) {
-        res.sendStatus(serviceErrorToStatusCode[err.type]);
-    }
+export default function handleErrorsMiddleware(err, req: Request, res: Response, next: NextFunction) {
+    // if (err.type) {
+    //     res.sendStatus(serviceErrorToStatusCode[err.type]);
+    // }
+    console.log(err)
     res.sendStatus(500);
 }
