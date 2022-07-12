@@ -1,7 +1,4 @@
 <p align="center">
-  <a href="https://github.com/AbnerTavares14/Valex.git">
-    <img src="./readme.png" alt="readme-logo" width="80" height="80">
-  </a>
 
   <h3 align="center">
     Valex
