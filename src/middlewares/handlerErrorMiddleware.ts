@@ -3,7 +3,8 @@ import { NextFunction, Request, Response } from "express";
 const serviceErrorToStatusCode = {
     notFound: 404,
     unprocessableEntity: 422,
-    conflict: 401
+    conflict: 409,
+    unauthorized: 401
 };
 
 export function notFoundError() {
@@ -15,6 +16,10 @@ export function conflict() {
 }
 export function unprocessableEntity() {
     return { type: "unprocessableEntity" };
+}
+
+export function unauthorized() {
+    return { type: "unauthorized" };
 }
 
 export default function handleErrorsMiddleware(err, req: Request, res: Response, next: NextFunction) {

@@ -10,7 +10,7 @@ import * as rechargeRepository from "../repositories/rechargeRepository.js";
 import * as paymentsRepository from "../repositories/paymentsRepository.js";
 
 
-export async function verifyCard(type: TransactionTypes, id: number, apiKey: string) {
+export async function createCard(type: TransactionTypes, id: number, apiKey: string) {
     const apiKeyIsValid = await companyRepository.findByApiKey(apiKey);
     const employee = await employeeRepository.findById(id);
     const employeeHasCardOfThisType = await cardRepository.findByTypeAndEmployeeId(type, id);
@@ -94,14 +94,13 @@ export async function verifyCard(type: TransactionTypes, id: number, apiKey: str
     }
 }
 
-export async function activeCard(cvv: string, password: string, id: number) {
+export async function activateCard(cvv: string, password: string, id: number) {
     const card = await cardRepository.findById(id);
 
-    console.log(card)
     if (!card) {
         throw handlerError.unprocessableEntity();
     }
-    console.log(card.password);
+
     const cryptr: Cryptr = new Cryptr("securityCodeCard");
     const decryptedCvv: string = cryptr.decrypt(card.securityCode);
 

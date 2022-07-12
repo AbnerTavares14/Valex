@@ -8,14 +8,14 @@ export async function createCard(req: Request, res: Response) {
     if (!apiKey) {
         res.sendStatus(422);
     }
-    const result = await cardService.verifyCard(type, employeeID, apiKey);
+    const result = await cardService.createCard(type, employeeID, apiKey);
     res.send(result).status(201);
 }
 
 export async function activateCard(req: Request, res: Response) {
     const { password, id, cvv } = req.body;
     console.log(password, id, cvv);
-    await cardService.activeCard(cvv, password, id);
+    await cardService.activateCard(cvv, password, id);
     res.sendStatus(200);
 }
 
