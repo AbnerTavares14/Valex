@@ -5,17 +5,6 @@
   </h3>
 </p>
 
-## Usage
-
-```bash
-$ git clone https://github.com/AbnerTavares14/Valex.git
-
-$ cd Valex
-
-$ npm install
-
-$ npm run start
-```
 
 API:
 
